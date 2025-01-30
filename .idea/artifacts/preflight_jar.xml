@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="preflight:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/preflight_jar</output-path>
+    <root id="archive" name="preflight.jar">
+      <element id="module-output" name="preflight" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/libs/pdfbox-app-2.0.33.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
