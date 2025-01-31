@@ -64,8 +64,9 @@ public class getFonts extends PDFStreamEngine {
                     }
                 }
 
-                String info = "Fonte(s): " + fontes + " | Cor: " + (color != null ? color.getColorSpace().getName()  + Arrays.toString(color.getComponents()) : "Indefinido ");
-                System.out.println("Página: " + currentPage + " - " + info);
+            //    String info = "Fonte(s): " + fontes + " | Cor: " + (color != null ? color.getColorSpace().getName()  + ' ' + Arrays.toString(color.getComponents()) : "Indefinido ");
+                String info = "Cor: " + (color != null ? color.getColorSpace().getName()  + ' ' + Arrays.toString(color.getComponents()) : "Indefinido ") + " Fonte(s): " + fontes ;
+                System.out.println("Pagina: " + currentPage + " - " + info);
             }
         }
         super.processOperator(operator, operands);
