@@ -11,7 +11,7 @@ import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
 import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
 
-import java.io.File;
+
 import java.io.IOException;
 import java.util.*;
 

@@ -5,12 +5,12 @@ import org.apache.pdfbox.pdmodel.PDPageTree;
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Scanner;
 
 public class Main {
-    private static final int PAGE_LIMIT = 200;
 
     public static void main(String[] args) {
+        // Configuração para suprimir warnings do PDFBox
+        System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog");
         if (args.length <= 1) {
             System.err.println("Uso: java -jar preflight.jar <caminho/para/pdf> <argumento>");
             System.exit(1);
@@ -31,7 +31,21 @@ public class Main {
             } else if (Objects.equals(argument, "fonts")) {
                 getFonts getFonts = new getFonts();
                 getFonts.extractFonts(document);
-            } else {
+            } else if (Objects.equals(argument, "image")) {
+                PDPageTree pages = document.getDocumentCatalog().getPages();
+                for (PDPage page : pages) {
+                    getImages extractor = new getImages(page, document);
+                    extractor.processPage(page);
+                }
+            } else if (Objects.equals(argument, "margin")) {
+                PDPageTree pages = document.getDocumentCatalog().getPages();
+                for (PDPage page : pages) {
+                    PDFMargins extractor = new PDFMargins(page, document);
+                    extractor.processPage(page);
+                    extractor.calculateMarginsAndBleed();
+                }
+            }
+            else {
                 System.out.println("Argumento inválido.");
             }
         } catch (IOException e) {

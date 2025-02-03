@@ -7,10 +7,7 @@ import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
 import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
-import org.apache.pdfbox.util.Matrix;
-import org.apache.pdfbox.util.Vector;
 
-import java.awt.geom.GeneralPath;
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
