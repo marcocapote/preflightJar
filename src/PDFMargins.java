@@ -1,5 +1,4 @@
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
 import org.apache.pdfbox.cos.COSName;
@@ -13,6 +12,9 @@ public class PDFMargins extends PDFGraphicsStreamEngine {
     private final PDPage currentPage;
     private final PDDocument document;
     private final PDRectangle mediaBox;
+    private PDRectangle bleedBox;
+    private final PDRectangle artBox;
+    private PDRectangle trimBox;
     private float minX = Float.MAX_VALUE;
     private float minY = Float.MAX_VALUE;
     private float maxX = Float.MIN_VALUE;
@@ -23,6 +25,10 @@ public class PDFMargins extends PDFGraphicsStreamEngine {
         this.currentPage = page;
         this.document = document;
         this.mediaBox = page.getMediaBox();
+        this.bleedBox = page.getBleedBox();
+        this.artBox = page.getArtBox();
+        this.trimBox = page.getTrimBox();
+
     }
 
     @Override
@@ -37,7 +43,7 @@ public class PDFMargins extends PDFGraphicsStreamEngine {
 
     @Override
     public void clip(int i) throws IOException {
-
+        // Implementação vazia
     }
 
     @Override
@@ -69,59 +75,50 @@ public class PDFMargins extends PDFGraphicsStreamEngine {
 
     @Override
     public void closePath() throws IOException {
-
+        // Implementação vazia
     }
 
     @Override
     public void endPath() throws IOException {
-
+        // Implementação vazia
     }
 
     @Override
     public void strokePath() throws IOException {
-
+        // Implementação vazia
     }
 
     @Override
     public void fillPath(int i) throws IOException {
-
+        // Implementação vazia
     }
 
     @Override
     public void fillAndStrokePath(int i) throws IOException {
-
+        // Implementação vazia
     }
 
     @Override
     public void shadingFill(COSName cosName) throws IOException {
-
+        // Implementação vazia
     }
 
-    // ... (outros métodos mantidos conforme necessário)
-
     private void updateBounds(float x, float y) {
-        // Considera apenas elementos dentro da página
-        if (x >= mediaBox.getLowerLeftX() && x <= mediaBox.getUpperRightX() &&
-                y >= mediaBox.getLowerLeftY() && y <= mediaBox.getUpperRightY()) {
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
-        }
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
     }
 
     public void calculateMarginsAndBleed() {
-        // Verifica se o conteúdo foi detectado
-        if (minX == Float.MAX_VALUE) {
-            System.out.println("Nenhum conteúdo detectado");
-            return;
+        // Se TrimBox não existir, usa MediaBox como padrão
+        if (trimBox == null) {
+            trimBox = mediaBox;
         }
 
-        // Obtém a BleedBox (área de sangria)
-        PDRectangle bleedBox = currentPage.getBleedBox();
+        // Se BleedBox não existir, assume uma sangria padrão (3 mm)
         if (bleedBox == null) {
-            // Se a BleedBox não estiver definida, assume um valor padrão de 5 mm
-            float bleedSize = 5 * 2.83465f; // Converte mm para pontos (1 mm = 2.83465 pontos)
+            float bleedSize = 3 * 2.83465f; // 3 mm em pontos (1 mm = 2.83465 pt)
             bleedBox = new PDRectangle(
                     mediaBox.getLowerLeftX() - bleedSize,
                     mediaBox.getLowerLeftY() - bleedSize,
@@ -130,46 +127,30 @@ public class PDFMargins extends PDFGraphicsStreamEngine {
             );
         }
 
-        // Calcula as margens internas
-        float marginLeft = minX - mediaBox.getLowerLeftX();
-        float marginRight = mediaBox.getUpperRightX() - maxX;
-        float marginBottom = minY - mediaBox.getLowerLeftY();
-        float marginTop = mediaBox.getUpperRightY() - maxY;
+        // Calcula a sangria (diferença entre BleedBox e TrimBox)
+        float bleedLeft = bleedBox.getLowerLeftX() - trimBox.getLowerLeftX();
+        float bleedRight = trimBox.getUpperRightX() - bleedBox.getUpperRightX();
+        float bleedTop = trimBox.getUpperRightY() - bleedBox.getUpperRightY();
+        float bleedBottom = bleedBox.getLowerLeftY() - trimBox.getLowerLeftY();
 
-        // Calcula as sangrias
-        float bleedLeft = bleedBox.getLowerLeftX() - mediaBox.getLowerLeftX();
-        float bleedRight = bleedBox.getUpperRightX() - mediaBox.getUpperRightX();
-        float bleedBottom = bleedBox.getLowerLeftY() - mediaBox.getLowerLeftY();
-        float bleedTop = bleedBox.getUpperRightY() - mediaBox.getUpperRightY();
+        // Converte para milímetros
+        float bleedLeftMm = Math.abs(pontosParaMm(bleedLeft));
+        float bleedRightMm = Math.abs(pontosParaMm(bleedRight));
+        float bleedTopMm = Math.abs(pontosParaMm(bleedTop));
+        float bleedBottomMm = Math.abs(pontosParaMm(bleedBottom));
 
-        // Converte os valores para milímetros
-        float marginLeftMm = pontosParaMm(marginLeft);
-        float marginRightMm = pontosParaMm(marginRight);
-        float marginBottomMm = pontosParaMm(marginBottom);
-        float marginTopMm = pontosParaMm(marginTop);
-
-        float bleedLeftMm = pontosParaMm(bleedLeft);
-        float bleedRightMm = pontosParaMm(bleedRight);
-        float bleedBottomMm = pontosParaMm(bleedBottom);
-        float bleedTopMm = pontosParaMm(bleedTop);
-
-        // Exibe as margens e sangrias em milímetros
-        System.out.println("Página: " + getPageNumber());
-        System.out.printf("Margens [L:%.1f R:%.1f T:%.1f B:%.1f] mm%n",
-                marginLeftMm, marginRightMm, marginTopMm, marginBottomMm);
-        System.out.printf("Sangrias [L:%.1f R:%.1f T:%.1f B:%.1f] mm%n",
+        // Exibe os resultados
+        System.out.println("Página: " + getPageNumber(currentPage));
+        System.out.printf("Sangria [Esq: %.1f mm, Dir: %.1f mm, Topo: %.1f mm, Base: %.1f mm]%n",
                 bleedLeftMm, bleedRightMm, bleedTopMm, bleedBottomMm);
         System.out.println("-------------------------");
     }
 
-    /**
-     * Converte pontos para milímetros.
-     */
     private float pontosParaMm(float pontos) {
         return pontos * 0.352778f; // 1 ponto = 0,352778 mm
     }
 
-    private int getPageNumber() {
-        return document.getDocumentCatalog().getPages().indexOf(currentPage) + 1;
+    private int getPageNumber(PDPage currentPage) {
+        return document.getDocumentCatalog().getPages().indexOf(this.currentPage) + 1;
     }
 }
