@@ -43,6 +43,12 @@ public class Main {
                     PDFMargins extractor = new PDFMargins(page, document);
                     extractor.calculateMarginsAndBleed();
                 }
+            } else if (Objects.equals(argument, "marginSafety")) {
+                PDPageTree pages = document.getDocumentCatalog().getPages();
+                for (PDPage page : pages) {
+                    PDFMargins extractor = new PDFMargins(page, document);
+                    extractor.calculateSafetyMargin();
+                }
             }
             else {
                 System.out.println("Argumento inválido.");

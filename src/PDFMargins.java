@@ -9,6 +9,7 @@ public class PDFMargins {
     private final PDRectangle mediaBox;
     private PDRectangle bleedBox;
     private PDRectangle trimBox;
+    private PDRectangle artBox;
 
     public PDFMargins(PDPage page, PDDocument document) {
         this.currentPage = page;
@@ -16,6 +17,7 @@ public class PDFMargins {
         this.mediaBox = page.getMediaBox();
         this.bleedBox = page.getBleedBox();
         this.trimBox = page.getTrimBox();
+        this.artBox = page.getArtBox();
     }
 
     public void calculateMarginsAndBleed() {
@@ -52,6 +54,22 @@ public class PDFMargins {
         System.out.printf("Sangria [Esq: %.1f mm, Dir: %.1f mm, Topo: %.1f mm, Base: %.1f mm]%n",
                 bleedLeftMm, bleedRightMm, bleedTopMm, bleedBottomMm);
         System.out.println("-------------------------");
+    }
+
+    public void calculateSafetyMargin(){
+        float safetyMarginLeft = artBox.getLowerLeftX() - trimBox.getLowerLeftX();
+        float safetyMarginRight = artBox.getUpperRightX() - trimBox.getUpperRightX();
+        float safetyMarginTop = artBox.getUpperRightY() - trimBox.getUpperRightY();
+        float safetyMarginBottom = artBox.getLowerLeftY() - trimBox.getLowerLeftY();
+
+        // Converte para milímetros
+        float safetyMarginLeftMm = Math.abs(pontosParaMm(safetyMarginLeft));
+        float safetyMarginRightMm = Math.abs(pontosParaMm(safetyMarginRight));
+        float safetyMarginTopMm = Math.abs(pontosParaMm(safetyMarginTop));
+        float safetyMarginBottomMm = Math.abs(pontosParaMm(safetyMarginBottom));
+
+        System.out.printf("Pagina: " + getPageNumber() + " Margens[Esq: %.1f mm, Dir: %.1f mm, Topo: %.1f mm, Base: %.1f mm]%n",
+                safetyMarginLeftMm, safetyMarginRightMm, safetyMarginTopMm, safetyMarginBottomMm);
     }
 
     private float pontosParaMm(float pontos) {
