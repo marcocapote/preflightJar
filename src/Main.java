@@ -41,7 +41,6 @@ public class Main {
                 PDPageTree pages = document.getDocumentCatalog().getPages();
                 for (PDPage page : pages) {
                     PDFMargins extractor = new PDFMargins(page, document);
-                    extractor.processPage(page);
                     extractor.calculateMarginsAndBleed();
                 }
             }

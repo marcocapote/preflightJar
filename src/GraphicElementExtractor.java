@@ -25,10 +25,7 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
 
     @Override
     public void drawImage(PDImage pdImage) throws IOException {
-        System.out.println("Image detected on page: " + getPageNumber(currentPage));
-        System.out.println("  - Width: " + pdImage.getWidth());
-        System.out.println("  - Height: " + pdImage.getHeight());
-        System.out.println("  - Color Space: " + pdImage.getColorSpace().getName());
+        System.out.println("Image detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + pdImage.getColorSpace().getName());
     }
 
     @Override
@@ -41,9 +38,7 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         PDGraphicsState state = getGraphicsState();
         PDColor fillColor = state.getNonStrokingColor();
         PDColorSpace fillColorSpace = state.getNonStrokingColorSpace();
-        System.out.println("Fill Path detected on page: " + getPageNumber(currentPage));
-        System.out.println("  - Fill Color: " + fillColor);
-        System.out.println("  - Fill Color Space: " + fillColorSpace);
+        System.out.println("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
     }
 
     @Override
@@ -61,9 +56,7 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         PDGraphicsState state = getGraphicsState();
         PDColor strokeColor = state.getStrokingColor();
         PDColorSpace strokeColorSpace = state.getStrokingColorSpace();
-        System.out.println("Stroke Path detected on page: " + getPageNumber(currentPage));
-        System.out.println("  - Stroke Color: " + strokeColor);
-        System.out.println("  - Stroke Color Space: " + strokeColorSpace);
+        System.out.println("Stroke Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + strokeColorSpace + " Components: " + strokeColor);
     }
 
     private int getPageNumber(PDPage page) {
