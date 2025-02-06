@@ -31,6 +31,9 @@ public class Main {
             } else if (Objects.equals(argument, "fonts")) {
                 getFonts getFonts = new getFonts();
                 getFonts.extractFonts(document);
+            } else if (Objects.equals(argument, "fontSize")) {
+                getFonts getFonts = new getFonts();
+                getFonts.extractFonts(document);
             } else if (Objects.equals(argument, "image")) {
                 PDPageTree pages = document.getDocumentCatalog().getPages();
                 for (PDPage page : pages) {

@@ -68,7 +68,7 @@ public class PDFMargins {
         float safetyMarginTopMm = Math.abs(pontosParaMm(safetyMarginTop));
         float safetyMarginBottomMm = Math.abs(pontosParaMm(safetyMarginBottom));
 
-        System.out.printf("Pagina: " + getPageNumber() + " Margens[Esq: %.1f mm, Dir: %.1f mm, Topo: %.1f mm, Base: %.1f mm]%n",
+        System.out.printf("Pagina: " + getPageNumber() + " Margens [Esq: %.1f mm, Dir: %.1f mm, Topo: %.1f mm, Base: %.1f mm]%n",
                 safetyMarginLeftMm, safetyMarginRightMm, safetyMarginTopMm, safetyMarginBottomMm);
     }
 
