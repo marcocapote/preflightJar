@@ -95,7 +95,7 @@ public class getFonts extends PDFStreamEngine {
                 String info = "Cor: " + (color != null
                         ? color.getColorSpace().getName() + " " + Arrays.toString(color.getComponents())
                         : "Indefinido")
-                        + " Fonte(s): " + fontes;
+                        + " Fonte(s): " + fontes.getFirst();
                 System.out.println("Página: " + currentPage + " - " + info);
             }
         }

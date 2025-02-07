@@ -4,6 +4,8 @@ import org.apache.pdfbox.pdmodel.PDPageTree;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 public class Main {
@@ -31,9 +33,45 @@ public class Main {
             } else if (Objects.equals(argument, "fonts")) {
                 getFonts getFonts = new getFonts();
                 getFonts.extractFonts(document);
-            } else if (Objects.equals(argument, "fontSize")) {
-                getFonts getFonts = new getFonts();
-                getFonts.extractFonts(document);
+            }else if (Objects.equals(argument, "fontElement")) {
+                PDPageTree pages = document.getDocumentCatalog().getPages();
+                int pageIndex = 1;
+                for (PDPage page : pages) {
+                    // Extrai elementos gráficos
+                    GraphicElementExtractor graphicExtractor = new GraphicElementExtractor(page, document);
+                    graphicExtractor.processPage(page);
+                    List<GraphicElement> graphicElements = graphicExtractor.getGraphicElements();
+
+                    // Extrai elementos de texto
+                    TextExtractor textExtractor = new TextExtractor();
+                    textExtractor.setCurrentPage(page); // Define a página atual
+                    textExtractor.processPage(page); // Processa a página
+                    List<TextElement> textElements = textExtractor.getTextElements();
+
+                    // Verifica sobreposição
+                    System.out.println("\n--- Página " + pageIndex + " ---");
+                    if (textElements.isEmpty() && graphicElements.isEmpty()) {
+                        System.out.println("Nenhum elemento encontrado.");
+                    } else {
+                        for (TextElement text : textElements) {
+                            boolean isInsideGraphic = false;
+                            for (GraphicElement graphic : graphicElements) {
+                                if (graphic.getBounds().contains(text.getX(), text.getY())) {
+                                    System.out.println("Texto dentro de elemento gráfico:");
+                                    System.out.println("  Posição: (" + text.getX() + ", " + text.getY() + ")");
+                                    System.out.println("  Fonte: " + text.getFontName() + ", Tamanho: " + text.getFontSize());
+                                    System.out.println("  Cor do Texto: " + Arrays.toString(text.getColor().getComponents()));
+                                    System.out.println("  Cor do Gráfico: " + Arrays.toString(graphic.getColor().getComponents()));
+                                    isInsideGraphic = true;
+                                }
+                            }
+                            if (!isInsideGraphic) {
+                                System.out.println("Texto fora de elementos gráficos: '" + text.getFontName() + "' em (" + text.getX() + ", " + text.getY() + ")");
+                            }
+                        }
+                    }
+                    pageIndex++;
+                }
             } else if (Objects.equals(argument, "image")) {
                 PDPageTree pages = document.getDocumentCatalog().getPages();
                 for (PDPage page : pages) {
@@ -52,8 +90,7 @@ public class Main {
                     PDFMargins extractor = new PDFMargins(page, document);
                     extractor.calculateSafetyMargin();
                 }
-            }
-            else {
+            } else {
                 System.out.println("Argumento inválido.");
             }
         } catch (IOException e) {
