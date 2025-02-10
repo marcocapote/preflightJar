@@ -22,6 +22,8 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
     private final PDDocument document;
     private List<GraphicElement> graphicElements = new ArrayList<>(); // New field to store graphic elements
     private List<Point2D> currentPathPoints = new ArrayList<>(); // New field to track path points
+    private List<String> mensagens = new ArrayList<>();
+
 
     public GraphicElementExtractor(PDPage page, PDDocument document) {
         super(page);
@@ -31,7 +33,9 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
 
     @Override
     public void drawImage(PDImage pdImage) throws IOException {
-        System.out.println("Image detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + pdImage.getColorSpace().getName());
+      //  System.out.println("Image detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + pdImage.getColorSpace().getName());
+        mensagens.add("Image detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + pdImage.getColorSpace().getName());
+
     }
 
     @Override
@@ -44,7 +48,8 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         PDGraphicsState state = getGraphicsState();
         PDColor fillColor = state.getNonStrokingColor();
         PDColorSpace fillColorSpace = state.getNonStrokingColorSpace();
-        System.out.println("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
+      //  System.out.println("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
+        mensagens.add("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
 
         // Process path bounds for filled paths
         processPathBounds(false);
@@ -65,8 +70,8 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         PDGraphicsState state = getGraphicsState();
         PDColor strokeColor = state.getStrokingColor();
         PDColorSpace strokeColorSpace = state.getStrokingColorSpace();
-        System.out.println("Stroke Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + strokeColorSpace + " Components: " + strokeColor);
-
+       // System.out.println("Stroke Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + strokeColorSpace + " Components: " + strokeColor);
+        mensagens.add("Stroke Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + strokeColorSpace + " Components: " + strokeColor);
         // Process path bounds for stroked paths
         processPathBounds(true);
     }
@@ -184,5 +189,9 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
     // New method to get graphic elements
     public List<GraphicElement> getGraphicElements() {
         return graphicElements;
+    }
+
+    public List<String> getMensagens(){
+        return mensagens;
     }
 }

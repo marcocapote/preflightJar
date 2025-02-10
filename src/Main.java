@@ -29,6 +29,7 @@ public class Main {
                 for (PDPage page : pages) {
                     GraphicElementExtractor extractor = new GraphicElementExtractor(page, document);
                     extractor.processPage(page);
+                    extractor.getMensagens().forEach(System.out::println);
                 }
             } else if (Objects.equals(argument, "fonts")) {
                 getFonts getFonts = new getFonts();
@@ -37,6 +38,7 @@ public class Main {
                 PDPageTree pages = document.getDocumentCatalog().getPages();
                 int pageIndex = 1;
                 for (PDPage page : pages) {
+
                     // Extrai elementos gráficos
                     GraphicElementExtractor graphicExtractor = new GraphicElementExtractor(page, document);
                     graphicExtractor.processPage(page);
@@ -49,7 +51,7 @@ public class Main {
                     List<TextElement> textElements = textExtractor.getTextElements();
 
                     // Verifica sobreposição
-                    System.out.println("\n--- Página " + pageIndex + " ---");
+                   // System.out.println("\n--- Página " + pageIndex + " ---");
                     if (textElements.isEmpty() && graphicElements.isEmpty()) {
                         System.out.println("Nenhum elemento encontrado.");
                     } else {
@@ -57,17 +59,16 @@ public class Main {
                             boolean isInsideGraphic = false;
                             for (GraphicElement graphic : graphicElements) {
                                 if (graphic.getBounds().contains(text.getX(), text.getY())) {
-                                    System.out.println("Texto dentro de elemento gráfico:");
-                                    System.out.println("  Posição: (" + text.getX() + ", " + text.getY() + ")");
-                                    System.out.println("  Fonte: " + text.getFontName() + ", Tamanho: " + text.getFontSize());
-                                    System.out.println("  Cor do Texto: " + Arrays.toString(text.getColor().getComponents()));
-                                    System.out.println("  Cor do Gráfico: " + Arrays.toString(graphic.getColor().getComponents()));
+                                    System.out.println("Pagina: " + pageIndex + "  Posicao: (" + text.getX() + ", " + text.getY() + ")" + ", Tamanho: " + text.getFontSize() + "  CorTexto: " + Arrays.toString(text.getColor().getComponents()) + "  CorGrafico: " + Arrays.toString(graphic.getColor().getComponents()));
+//                                    System.out.println("Texto dentro de elemento grafico:");
+//                                    System.out.println("  Posicao: (" + text.getX() + ", " + text.getY() + ")");
+//                                    System.out.println("  Fonte: " + text.getFontName() + ", Tamanho: " + text.getFontSize());
+//                                    System.out.println("  Cor do Texto: " + Arrays.toString(text.getColor().getComponents()));
+//                                    System.out.println("  Cor do Grafico: " + Arrays.toString(graphic.getColor().getComponents()));
                                     isInsideGraphic = true;
                                 }
                             }
-                            if (!isInsideGraphic) {
-                                System.out.println("Texto fora de elementos gráficos: '" + text.getFontName() + "' em (" + text.getX() + ", " + text.getY() + ")");
-                            }
+
                         }
                     }
                     pageIndex++;
