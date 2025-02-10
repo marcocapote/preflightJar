@@ -96,7 +96,7 @@ public class getFonts extends PDFStreamEngine {
                         ? color.getColorSpace().getName() + " " + Arrays.toString(color.getComponents())
                         : "Indefinido")
                         + " Fonte(s): " + fontes.getFirst();
-                System.out.println("Página: " + currentPage + " - " + info);
+                System.out.println("Pagina: " + currentPage + " - " + info);
             }
         }
         // Continua o processamento normal para atualizar o estado (inclusive o textMatrix)
