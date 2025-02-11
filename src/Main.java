@@ -1,6 +1,7 @@
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageTree;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,75 +25,95 @@ public class Main {
         File file = new File(filePath);
 
         try (PDDocument document = PDDocument.load(file)) {
-            if (Objects.equals(argument, "graphic")) {
-                PDPageTree pages = document.getDocumentCatalog().getPages();
-                for (PDPage page : pages) {
-                    GraphicElementExtractor extractor = new GraphicElementExtractor(page, document);
-                    extractor.processPage(page);
-                    extractor.getMensagens().forEach(System.out::println);
+            switch (argument) {
+                case "graphic" -> {
+                    PDPageTree pages = document.getDocumentCatalog().getPages();
+                    for (PDPage page : pages) {
+                        GraphicElementExtractor extractor = new GraphicElementExtractor(page, document);
+                        extractor.processPage(page);
+                        extractor.getMensagens().forEach(System.out::println);
+                    }
                 }
-            } else if (Objects.equals(argument, "fonts")) {
-                getFonts getFonts = new getFonts();
-                getFonts.extractFonts(document);
-            }else if (Objects.equals(argument, "fontElement")) {
-                PDPageTree pages = document.getDocumentCatalog().getPages();
-                int pageIndex = 1;
-                for (PDPage page : pages) {
+                case "fonts" -> {
+                    getFonts getFonts = new getFonts();
+                    getFonts.extractFonts(document);
+                }
+                case "fontElement" -> {
+                    PDPageTree pages = document.getDocumentCatalog().getPages();
+                    int pageIndex = 1;
+                    for (PDPage page : pages) {
 
-                    // Extrai elementos gráficos
-                    GraphicElementExtractor graphicExtractor = new GraphicElementExtractor(page, document);
-                    graphicExtractor.processPage(page);
-                    List<GraphicElement> graphicElements = graphicExtractor.getGraphicElements();
+                        // Extrai elementos gráficos
+                        GraphicElementExtractor graphicExtractor = new GraphicElementExtractor(page, document);
+                        graphicExtractor.processPage(page);
+                        List<GraphicElement> graphicElements = graphicExtractor.getGraphicElements();
 
-                    // Extrai elementos de texto
-                    TextExtractor textExtractor = new TextExtractor();
-                    textExtractor.setCurrentPage(page); // Define a página atual
-                    textExtractor.processPage(page); // Processa a página
-                    List<TextElement> textElements = textExtractor.getTextElements();
+                        // Extrai elementos de texto
+                        TextExtractor textExtractor = new TextExtractor();
+                        textExtractor.setCurrentPage(page); // Define a página atual
+                        textExtractor.processPage(page); // Processa a página
+                        List<TextElement> textElements = textExtractor.getTextElements();
 
-                    // Verifica sobreposição
-                   // System.out.println("\n--- Página " + pageIndex + " ---");
-                    if (textElements.isEmpty() && graphicElements.isEmpty()) {
-                        System.out.println("Nenhum elemento encontrado.");
-                    } else {
-                        for (TextElement text : textElements) {
-                            boolean isInsideGraphic = false;
-                            for (GraphicElement graphic : graphicElements) {
-                                if (graphic.getBounds().contains(text.getX(), text.getY())) {
-                                    System.out.println("Pagina: " + pageIndex + "  Posicao: (" + text.getX() + ", " + text.getY() + ")" + ", Tamanho: " + text.getFontSize() + "  CorTexto: " + Arrays.toString(text.getColor().getComponents()) + "  CorGrafico: " + Arrays.toString(graphic.getColor().getComponents()));
+                        // Verifica sobreposição
+                        // System.out.println("\n--- Página " + pageIndex + " ---");
+                        if (textElements.isEmpty() && graphicElements.isEmpty()) {
+                            System.out.println("Nenhum elemento encontrado.");
+                        } else {
+                            for (TextElement text : textElements) {
+                                boolean isInsideGraphic = false;
+                                for (GraphicElement graphic : graphicElements) {
+                                    if (graphic.getBounds().contains(text.getX(), text.getY())) {
+                                        System.out.println("Pagina: " + pageIndex + "  Posicao: (" + text.getX() + ", " + text.getY() + ")" + ", Tamanho: " + text.getFontSize() + "  CorTexto: " + Arrays.toString(text.getColor().getComponents()) + "  CorGrafico: " + Arrays.toString(graphic.getColor().getComponents()));
 //                                    System.out.println("Texto dentro de elemento grafico:");
 //                                    System.out.println("  Posicao: (" + text.getX() + ", " + text.getY() + ")");
 //                                    System.out.println("  Fonte: " + text.getFontName() + ", Tamanho: " + text.getFontSize());
 //                                    System.out.println("  Cor do Texto: " + Arrays.toString(text.getColor().getComponents()));
 //                                    System.out.println("  Cor do Grafico: " + Arrays.toString(graphic.getColor().getComponents()));
-                                    isInsideGraphic = true;
+                                        isInsideGraphic = true;
+                                    }
                                 }
-                            }
 
+                            }
                         }
+                        pageIndex++;
                     }
-                    pageIndex++;
                 }
-            } else if (Objects.equals(argument, "image")) {
-                PDPageTree pages = document.getDocumentCatalog().getPages();
-                for (PDPage page : pages) {
-                    getImages extractor = new getImages(page, document);
-                    extractor.processPage(page);
+                case "image" -> {
+                    PDPageTree pages = document.getDocumentCatalog().getPages();
+                    for (PDPage page : pages) {
+                        getImages extractor = new getImages(page, document);
+                        extractor.processPage(page);
+                    }
                 }
-            } else if (Objects.equals(argument, "margin")) {
-                PDPageTree pages = document.getDocumentCatalog().getPages();
-                for (PDPage page : pages) {
-                    PDFMargins extractor = new PDFMargins(page, document);
-                    extractor.calculateMarginsAndBleed();
+                case "margin" -> {
+                    PDPageTree pages = document.getDocumentCatalog().getPages();
+                    for (PDPage page : pages) {
+                        PDFMargins extractor = new PDFMargins(page, document);
+                        extractor.calculateMarginsAndBleed();
+                    }
                 }
-            } else if (Objects.equals(argument, "marginSafety")) {
-                PDPageTree pages = document.getDocumentCatalog().getPages();
-                for (PDPage page : pages) {
-                    PDFMargins extractor = new PDFMargins(page, document);
-                    extractor.calculateSafetyMargin();
+                case "marginSafety" -> {
+                    PDPageTree pages = document.getDocumentCatalog().getPages();
+                    for (PDPage page : pages) {
+                        PDFMargins extractor = new PDFMargins(page, document);
+                        extractor.calculateSafetyMargin();
+                    }
                 }
-            } else {
-                System.out.println("Argumento inválido.");
+                case "info" -> {
+                    PDPageTree pages = document.getDocumentCatalog().getPages();
+                    int quantidadePagina = pages.getCount();
+
+                    PDPage page = pages.get(0);
+                    PDRectangle mediaBox = page.getMediaBox();
+
+                    // Convertendo de pontos para mm
+                    float widthMm = (mediaBox.getWidth() / 72) * 25.4f;
+                    float heightMm = (mediaBox.getHeight() / 72) * 25.4f;
+
+                    System.out.println("Paginas: " + quantidadePagina);
+                    System.out.printf("Resolucao: %.2f mm x %.2f mm", widthMm, heightMm);
+                }
+                case null, default -> System.out.println("Argumento inválido.");
             }
         } catch (IOException e) {
             e.printStackTrace();
