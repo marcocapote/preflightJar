@@ -7,7 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+
 
 public class Main {
 
@@ -60,19 +60,11 @@ public class Main {
                             System.out.println("Nenhum elemento encontrado.");
                         } else {
                             for (TextElement text : textElements) {
-                                boolean isInsideGraphic = false;
                                 for (GraphicElement graphic : graphicElements) {
-                                    if (graphic.getBounds().contains(text.getX(), text.getY())) {
+                                    if (graphic.getBounds().intersects(text.getBounds())) {
                                         System.out.println("Pagina: " + pageIndex + "  Posicao: (" + text.getX() + ", " + text.getY() + ")" + ", Tamanho: " + text.getFontSize() + "  CorTexto: " + Arrays.toString(text.getColor().getComponents()) + "  CorGrafico: " + Arrays.toString(graphic.getColor().getComponents()));
-//                                    System.out.println("Texto dentro de elemento grafico:");
-//                                    System.out.println("  Posicao: (" + text.getX() + ", " + text.getY() + ")");
-//                                    System.out.println("  Fonte: " + text.getFontName() + ", Tamanho: " + text.getFontSize());
-//                                    System.out.println("  Cor do Texto: " + Arrays.toString(text.getColor().getComponents()));
-//                                    System.out.println("  Cor do Grafico: " + Arrays.toString(graphic.getColor().getComponents()));
-                                        isInsideGraphic = true;
                                     }
                                 }
-
                             }
                         }
                         pageIndex++;
