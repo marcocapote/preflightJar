@@ -3,12 +3,14 @@ import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageTree;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
 import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
 import org.apache.pdfbox.util.Matrix;
 
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
@@ -23,6 +25,10 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
     private List<GraphicElement> graphicElements = new ArrayList<>(); // New field to store graphic elements
     private List<Point2D> currentPathPoints = new ArrayList<>(); // New field to track path points
     private List<String> mensagens = new ArrayList<>();
+    private float HY;
+    private float LY;
+    private float HX;
+    private float LX;
 
 
     public GraphicElementExtractor(PDPage page, PDDocument document) {
@@ -35,6 +41,23 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
     public void drawImage(PDImage pdImage) throws IOException {
       //  System.out.println("Image detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + pdImage.getColorSpace().getName());
         mensagens.add("Image detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + pdImage.getColorSpace().getName());
+        PDGraphicsState state = getGraphicsState();
+        Matrix ctm = state.getCurrentTransformationMatrix();
+        float x = ctm.getTranslateX();
+        float y = ctm.getTranslateY();
+
+        if(x > HX){
+            HX = x;
+        }
+        if(x < LX){
+            LX = x;
+        }
+        if (y > HY) {
+            HY = y;
+        }
+        if (y < LY) {
+            LY = y;
+        }
 
     }
 
@@ -48,8 +71,25 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         PDGraphicsState state = getGraphicsState();
         PDColor fillColor = state.getNonStrokingColor();
         PDColorSpace fillColorSpace = state.getNonStrokingColorSpace();
+        Matrix ctm = state.getCurrentTransformationMatrix();
+        float x = ctm.getTranslateX();
+        float y = ctm.getTranslateY();
       //  System.out.println("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
         mensagens.add("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
+
+        if(x > HX){
+            HX = x;
+        }
+        if(x < LX){
+            LX = x;
+        }
+        if (y > HY) {
+            HY = y;
+        }
+        if (y < LY) {
+            LY = y;
+        }
+
 
         // Process path bounds for filled paths
         processPathBounds(false);
@@ -70,8 +110,27 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         PDGraphicsState state = getGraphicsState();
         PDColor strokeColor = state.getStrokingColor();
         PDColorSpace strokeColorSpace = state.getStrokingColorSpace();
+        Matrix ctm = state.getCurrentTransformationMatrix();
+        float x = ctm.getTranslateX();
+        float y = ctm.getTranslateY();
+
        // System.out.println("Stroke Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + strokeColorSpace + " Components: " + strokeColor);
         mensagens.add("Stroke Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + strokeColorSpace + " Components: " + strokeColor);
+
+        if(x > HX){
+            HX = x;
+        }
+        if(x < LX){
+            LX = x;
+        }
+        if (y > HY) {
+            HY = y;
+        }
+        if (y < LY) {
+            LY = y;
+        }
+
+
         // Process path bounds for stroked paths
         processPathBounds(true);
     }
@@ -193,5 +252,21 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
 
     public List<String> getMensagens(){
         return mensagens;
+    }
+
+    public float getHX() {
+        return HX;
+    }
+
+    public float getHY() {
+        return HY;
+    }
+
+    public float getLX() {
+        return LX;
+    }
+
+    public float getLY() {
+        return LY;
     }
 }

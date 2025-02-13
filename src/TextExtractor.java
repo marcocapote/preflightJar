@@ -80,8 +80,9 @@ public class TextExtractor extends PDFStreamEngine {
 
                     String fontName = font.getName();
                     float fontSize = state.getTextState().getFontSize();
+                    String text = font.toString();
 
-                    textElements.add(new TextElement(x, yNormalized, color, fontName, fontSize));
+                    textElements.add(new TextElement(x, yNormalized, color, fontName, fontSize, text));
                 }
                 break;
             case "Td": // Mover posição do texto

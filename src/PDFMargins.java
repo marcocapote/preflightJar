@@ -2,6 +2,8 @@ import java.io.IOException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
+import org.apache.pdfbox.util.Matrix;
 
 public class PDFMargins {
     private final PDPage currentPage;
@@ -10,6 +12,7 @@ public class PDFMargins {
     private PDRectangle bleedBox;
     private PDRectangle trimBox;
     private PDRectangle artBox;
+
 
     public PDFMargins(PDPage page, PDDocument document) {
         this.currentPage = page;
@@ -70,6 +73,14 @@ public class PDFMargins {
 
         System.out.printf("Pagina: " + getPageNumber() + " Margens [Esq: %.1f mm, Dir: %.1f mm, Topo: %.1f mm, Base: %.1f mm]%n",
                 safetyMarginLeftMm, safetyMarginRightMm, safetyMarginTopMm, safetyMarginBottomMm);
+    }
+
+    public void checkBleed(PDGraphicsState state){
+        Matrix coordinates = state.getCurrentTransformationMatrix();
+        float x = coordinates.getTranslateX();
+        float y = coordinates.getTranslateY();
+
+
     }
 
     private float pontosParaMm(float pontos) {
