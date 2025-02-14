@@ -106,12 +106,14 @@ public class getFonts extends PDFStreamEngine {
                 textContent = textBuilder.toString();
             }
 
-            // Exibe as informações
-            System.out.println("Texto: " + textContent);
-            System.out.println("Tamanho Base (Tf): " + baseFontSize);
-            System.out.println("Text Scale Y (Tm): " + textScaleY);
-            System.out.println("Tamanho Efetivo: " + effectiveFontSize);
-            System.out.println("Coordenadas X:" + ctm.getTranslateX() + " y:" + ctm.getTranslateY());
+//            // Exibe as informações
+//            System.out.println("Texto: " + textContent);
+//            System.out.println("Tamanho Base (Tf): " + baseFontSize);
+//            System.out.println("Text Scale Y (Tm): " + textScaleY);
+//            System.out.println("Tamanho Efetivo: " + effectiveFontSize);
+//            System.out.println("Coordenadas X:" + ctm.getTranslateX() + " y:" + ctm.getTranslateY());
+
+
 
             // Exibe informações sobre a fonte
             PDResources resources = getResources();
@@ -127,7 +129,7 @@ public class getFonts extends PDFStreamEngine {
                         ? color.getColorSpace().getName() + " " + Arrays.toString(color.getComponents())
                         : "Indefinido")
                         + " Fonte(s): " + fontes.getFirst();
-                System.out.println("Página: " + currentPage + " - " + info);
+                System.out.println("Pagina: " + currentPage + " - " + info);
             }
         }
 

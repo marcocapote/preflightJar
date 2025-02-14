@@ -59,7 +59,7 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
 
         // Adiciona o elemento gráfico à lista
         graphicElements.add(new GraphicElement(bounds, state.getNonStrokingColor(), state.getNonStrokingColorSpace()));
-
+        mensagens.add("Image detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + pdImage.getColorSpace().getName());
         // Atualiza as coordenadas máximas e mínimas
         updateBounds(bounds);
     }
@@ -72,7 +72,12 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
     @Override
     public void fillPath(int windingRule) throws IOException {
         PDGraphicsState state = getGraphicsState();
+        PDColor fillColor = state.getNonStrokingColor();
+        PDColorSpace fillColorSpace = state.getNonStrokingColorSpace();
         Matrix ctm = state.getCurrentTransformationMatrix();
+
+        //  System.out.println("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
+        mensagens.add("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
 
         // Processa os bounds do caminho
         processPathBounds(false, ctm);
@@ -91,7 +96,14 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
     @Override
     public void strokePath() throws IOException {
         PDGraphicsState state = getGraphicsState();
+        PDColor strokeColor = state.getStrokingColor();
+        PDColorSpace strokeColorSpace = state.getStrokingColorSpace();
         Matrix ctm = state.getCurrentTransformationMatrix();
+
+
+        // System.out.println("Stroke Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + strokeColorSpace + " Components: " + strokeColor);
+        mensagens.add("Stroke Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + strokeColorSpace + " Components: " + strokeColor);
+
 
         // Processa os bounds do caminho
         processPathBounds(true, ctm);

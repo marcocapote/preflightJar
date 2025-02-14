@@ -4,6 +4,7 @@ import org.apache.pdfbox.contentstream.operator.color.*;
 import org.apache.pdfbox.contentstream.operator.text.*;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.COSString;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
@@ -85,7 +86,23 @@ public class TextExtractor extends PDFStreamEngine {
                     float ctmScaleY = ctm.getScaleY();
                     float fontSize = basefontSize * textScaleY * ctmScaleY;
 
-                    String text = font.toString();
+                    // Extrair o texto do operador TJ
+                    StringBuilder textBuilder = new StringBuilder();
+                    for (COSBase operand : operands) {
+                        if (operand instanceof COSString) {
+                            // Decodificar a string usando a fonte
+                            COSString cosString = (COSString) operand;
+                            String text = cosString.getString();
+                           // String decodedText = font.toUnicode(text);
+                            textBuilder.append(text);
+                        } else if (operand instanceof COSNumber) {
+                            // Números no array TJ são ajustes de posicionamento (ignorar para extração de texto)
+                            float adjust = ((COSNumber) operand).floatValue();
+                            // Você pode usar o ajuste se necessário
+                        }
+                    }
+
+                    String text = textBuilder.toString(); // Texto extraído
 
                     textElements.add(new TextElement(x, yNormalized, color, fontName, fontSize, text));
                 }
@@ -100,43 +117,43 @@ public class TextExtractor extends PDFStreamEngine {
                     }
                 }
                 break;
-            case "Tm": // Definir matriz de texto
-                if (operands.size() >= 6) {
-                    if (operands.get(0) instanceof COSNumber &&
-                            operands.get(1) instanceof COSNumber &&
-                            operands.get(2) instanceof COSNumber &&
-                            operands.get(3) instanceof COSNumber &&
-                            operands.get(4) instanceof COSNumber &&
-                            operands.get(5) instanceof COSNumber) {
+                case "Tm": // Definir matriz de texto
+                    if (operands.size() >= 6) {
+                        if (operands.get(0) instanceof COSNumber &&
+                                operands.get(1) instanceof COSNumber &&
+                                operands.get(2) instanceof COSNumber &&
+                                operands.get(3) instanceof COSNumber &&
+                                operands.get(4) instanceof COSNumber &&
+                                operands.get(5) instanceof COSNumber) {
 
-                        float a = ((COSNumber) operands.get(0)).floatValue();
-                        float b = ((COSNumber) operands.get(1)).floatValue();
-                        float c = ((COSNumber) operands.get(2)).floatValue();
-                        float d = ((COSNumber) operands.get(3)).floatValue();
-                        float e = ((COSNumber) operands.get(4)).floatValue();
-                        float f = ((COSNumber) operands.get(5)).floatValue();
-                        textMatrix = new Matrix(a, b, c, d, e, f);
-                        lineMatrix = new Matrix(a, b, c, d, e, f);
+                            float a = ((COSNumber) operands.get(0)).floatValue();
+                            float b = ((COSNumber) operands.get(1)).floatValue();
+                            float c = ((COSNumber) operands.get(2)).floatValue();
+                            float d = ((COSNumber) operands.get(3)).floatValue();
+                            float e = ((COSNumber) operands.get(4)).floatValue();
+                            float f = ((COSNumber) operands.get(5)).floatValue();
+                            textMatrix = new Matrix(a, b, c, d, e, f);
+                            lineMatrix = new Matrix(a, b, c, d, e, f);
 
-                        float x = textMatrix.getTranslateX();
-                        float y = textMatrix.getTranslateY();
-                        float pageHeight = currentPage.getMediaBox().getHeight();
-                        float yNormalized = pageHeight - y;
+                            float x = textMatrix.getTranslateX();
+                            float y = textMatrix.getTranslateY();
+                            float pageHeight = currentPage.getMediaBox().getHeight();
+                            float yNormalized = pageHeight - y;
 
-                        PDColor color = state.getNonStrokingColor();
-                        PDFont font = state.getTextState().getFont();
-                        if (font == null) {
-                            break;
+                            PDColor color = state.getNonStrokingColor();
+                            PDFont font = state.getTextState().getFont();
+                            if (font == null) {
+                                break;
+                            }
+
+                            String fontName = font.getName();
+                            float fontSize = state.getTextState().getFontSize();
+                            String text = font.toString();
+
+                            textElements.add(new TextElement(x, yNormalized, color, fontName, fontSize, text));
                         }
-
-                        String fontName = font.getName();
-                        float fontSize = state.getTextState().getFontSize();
-                        String text = font.toString();
-
-                        textElements.add(new TextElement(x, yNormalized, color, fontName, fontSize, text));
                     }
-                }
-                break;
+                    break;
             case "T*": // Próxima linha
                 if (lineMatrix != null) {
                     textMatrix = Matrix.getTranslateInstance(0, -state.getTextState().getLeading()).multiply(lineMatrix);
