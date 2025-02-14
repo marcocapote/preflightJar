@@ -22,14 +22,13 @@ import java.util.Scanner;
 public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
     private final PDPage currentPage;
     private final PDDocument document;
-    private List<GraphicElement> graphicElements = new ArrayList<>(); // New field to store graphic elements
-    private List<Point2D> currentPathPoints = new ArrayList<>(); // New field to track path points
+    private List<GraphicElement> graphicElements = new ArrayList<>();
+    private List<Point2D> currentPathPoints = new ArrayList<>();
     private List<String> mensagens = new ArrayList<>();
     private float HY;
     private float LY;
     private float HX;
     private float LX;
-
 
     public GraphicElementExtractor(PDPage page, PDDocument document) {
         super(page);
@@ -39,26 +38,30 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
 
     @Override
     public void drawImage(PDImage pdImage) throws IOException {
-      //  System.out.println("Image detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + pdImage.getColorSpace().getName());
-        mensagens.add("Image detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + pdImage.getColorSpace().getName());
         PDGraphicsState state = getGraphicsState();
         Matrix ctm = state.getCurrentTransformationMatrix();
-        float x = ctm.getTranslateX();
-        float y = ctm.getTranslateY();
 
-        if(x > HX){
-            HX = x;
-        }
-        if(x < LX){
-            LX = x;
-        }
-        if (y > HY) {
-            HY = y;
-        }
-        if (y < LY) {
-            LY = y;
-        }
+        // Transforma as coordenadas da imagem
+        Point2D.Float point = new Point2D.Float(0, 0);
+        Point2D transformed = ctm.transformPoint(point.x, point.y);
 
+        // Obtém as dimensões da imagem
+        float imageWidth = pdImage.getWidth();
+        float imageHeight = pdImage.getHeight();
+
+        // Calcula o bounding box da imagem
+        Rectangle2D bounds = new Rectangle2D.Float(
+                (float) transformed.getX(),
+                (float) transformed.getY(),
+                imageWidth * ctm.getScaleX(),
+                imageHeight * ctm.getScaleY()
+        );
+
+        // Adiciona o elemento gráfico à lista
+        graphicElements.add(new GraphicElement(bounds, state.getNonStrokingColor(), state.getNonStrokingColorSpace()));
+
+        // Atualiza as coordenadas máximas e mínimas
+        updateBounds(bounds);
     }
 
     @Override
@@ -69,30 +72,10 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
     @Override
     public void fillPath(int windingRule) throws IOException {
         PDGraphicsState state = getGraphicsState();
-        PDColor fillColor = state.getNonStrokingColor();
-        PDColorSpace fillColorSpace = state.getNonStrokingColorSpace();
         Matrix ctm = state.getCurrentTransformationMatrix();
-        float x = ctm.getTranslateX();
-        float y = ctm.getTranslateY();
-      //  System.out.println("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
-        mensagens.add("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
 
-        if(x > HX){
-            HX = x;
-        }
-        if(x < LX){
-            LX = x;
-        }
-        if (y > HY) {
-            HY = y;
-        }
-        if (y < LY) {
-            LY = y;
-        }
-
-
-        // Process path bounds for filled paths
-        processPathBounds(false);
+        // Processa os bounds do caminho
+        processPathBounds(false, ctm);
     }
 
     @Override
@@ -108,34 +91,13 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
     @Override
     public void strokePath() throws IOException {
         PDGraphicsState state = getGraphicsState();
-        PDColor strokeColor = state.getStrokingColor();
-        PDColorSpace strokeColorSpace = state.getStrokingColorSpace();
         Matrix ctm = state.getCurrentTransformationMatrix();
-        float x = ctm.getTranslateX();
-        float y = ctm.getTranslateY();
 
-       // System.out.println("Stroke Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + strokeColorSpace + " Components: " + strokeColor);
-        mensagens.add("Stroke Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + strokeColorSpace + " Components: " + strokeColor);
-
-        if(x > HX){
-            HX = x;
-        }
-        if(x < LX){
-            LX = x;
-        }
-        if (y > HY) {
-            HY = y;
-        }
-        if (y < LY) {
-            LY = y;
-        }
-
-
-        // Process path bounds for stroked paths
-        processPathBounds(true);
+        // Processa os bounds do caminho
+        processPathBounds(true, ctm);
     }
 
-    private void processPathBounds(boolean isStroke) {
+    private void processPathBounds(boolean isStroke, Matrix ctm) {
         if (!currentPathPoints.isEmpty()) {
             double minX = Double.MAX_VALUE;
             double minY = Double.MAX_VALUE;
@@ -143,19 +105,30 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
             double maxY = -Double.MAX_VALUE;
 
             for (Point2D point : currentPathPoints) {
-                minX = Math.min(minX, point.getX());
-                minY = Math.min(minY, point.getY());
-                maxX = Math.max(maxX, point.getX());
-                maxY = Math.max(maxY, point.getY());
+                // Transforma o ponto usando a matriz CTM
+                Point2D transformed = ctm.transformPoint((float) point.getX(), (float) point.getY());
+                double x = transformed.getX();
+                double y = transformed.getY();
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
             }
 
-            Rectangle2D bounds = new Rectangle2D.Double(minX, minY, maxX - minX, maxY - minY);
-            PDGraphicsState state = getGraphicsState();
-            PDColor color = isStroke ? state.getStrokingColor() : state.getNonStrokingColor();
-            PDColorSpace colorSpace = isStroke ? state.getStrokingColorSpace() : state.getNonStrokingColorSpace();
+            if (minX != Double.MAX_VALUE) {
+                double width = maxX - minX;
+                double height = maxY - minY;
+                Rectangle2D bounds = new Rectangle2D.Double(minX, minY, width, height);
 
-            // Store the graphic element
-            graphicElements.add(new GraphicElement(bounds, color, colorSpace));
+                // Adiciona o elemento gráfico à lista
+                PDGraphicsState state = getGraphicsState();
+                PDColor color = isStroke ? state.getStrokingColor() : state.getNonStrokingColor();
+                PDColorSpace colorSpace = isStroke ? state.getStrokingColorSpace() : state.getNonStrokingColorSpace();
+                graphicElements.add(new GraphicElement(bounds, color, colorSpace));
+
+                // Atualiza as coordenadas máximas e mínimas
+                updateBounds(bounds);
+            }
         }
         currentPathPoints.clear();
     }
@@ -172,7 +145,7 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
 
     @Override
     public void curveTo(float x1, float y1, float x2, float y2, float x3, float y3) throws IOException {
-        addTransformedPoint(x3, y3); // Only adding the end point for simplicity
+        addTransformedPoint(x3, y3); // Apenas o ponto final para simplificar
     }
 
     private void addTransformedPoint(float x, float y) {
@@ -200,12 +173,28 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
 
     @Override
     public void appendRectangle(Point2D p0, Point2D p1, Point2D p2, Point2D p3) throws IOException {
-        // No action needed for appending rectangles
+        // Processa retângulos explicitamente
+        currentPathPoints.add(p0);
+        currentPathPoints.add(p1);
+        currentPathPoints.add(p2);
+        currentPathPoints.add(p3);
     }
 
     private int getPageNumber(PDPage page) {
         PDPageTree pages = document.getDocumentCatalog().getPages();
         return pages.indexOf(page) + 1;
+    }
+
+    private void updateBounds(Rectangle2D bounds) {
+        float x = (float) bounds.getX();
+        float y = (float) bounds.getY();
+        float width = (float) bounds.getWidth();
+        float height = (float) bounds.getHeight();
+
+        if (x > HX) HX = x;
+        if (x < LX) LX = x;
+        if (y > HY) HY = y;
+        if (y < LY) LY = y;
     }
 
     public void extractElements(File file, int PAGE_LIMIT) {
@@ -233,8 +222,6 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
                         break;
                     } else if (!"next".equals(input)) {
                         System.out.println("Comando inválido. Use 'next' para continuar ou 'exit' para sair.");
-                    } else {
-                        break;
                     }
                 }
             }
@@ -245,12 +232,11 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         }
     }
 
-    // New method to get graphic elements
     public List<GraphicElement> getGraphicElements() {
         return graphicElements;
     }
 
-    public List<String> getMensagens(){
+    public List<String> getMensagens() {
         return mensagens;
     }
 

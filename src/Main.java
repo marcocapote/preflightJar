@@ -60,12 +60,22 @@ public class Main {
                             System.out.println("Nenhum elemento encontrado.");
                         } else {
                             for (TextElement text : textElements) {
+                               // System.out.println(text.getBounds());
                                 for (GraphicElement graphic : graphicElements) {
                                     if (graphic.getBounds().intersects(text.getBounds())) {
                                         System.out.println("Pagina: " + pageIndex + "  Posicao: (" + text.getX() + ", " + text.getY() + ")" + ", Tamanho: " + text.getFontSize() + "  CorTexto: " + Arrays.toString(text.getColor().getComponents()) + "  CorGrafico: " + Arrays.toString(graphic.getColor().getComponents()));
                                     }
+//                                    else {
+//                                        System.out.println("Graphic: " + graphic.getBounds());
+//                                        System.out.println("Text: " + text.getBounds());
+//                                    }
+                                   // System.out.println(graphic.getBounds());
                                 }
+
+                                // System.out.println(text);
+
                             }
+
                         }
                         pageIndex++;
                     }

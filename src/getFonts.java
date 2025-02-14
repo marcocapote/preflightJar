@@ -12,13 +12,11 @@ import org.apache.pdfbox.contentstream.operator.color.SetNonStrokingDeviceGrayCo
 import org.apache.pdfbox.contentstream.operator.color.SetNonStrokingDeviceRGBColor;
 import org.apache.pdfbox.contentstream.operator.text.SetFontAndSize;
 import org.apache.pdfbox.contentstream.operator.text.ShowText;
-import org.apache.pdfbox.cos.COSBase;
-import org.apache.pdfbox.cos.COSName;
-import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.cos.*;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDResources;
-import org.apache.pdfbox.pdmodel.font.*;
+import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
 import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
 import org.apache.pdfbox.util.Matrix;
@@ -29,8 +27,9 @@ import java.util.Arrays;
 import java.util.List;
 
 public class getFonts extends PDFStreamEngine {
-    private Matrix currentTextMatrix = new Matrix();
+
     private int currentPage;
+    private Matrix textMatrix;
 
     public getFonts() throws IOException {
         // Registra o operador que define a fonte e o tamanho (Tf)
@@ -72,12 +71,11 @@ public class getFonts extends PDFStreamEngine {
             float d = ((COSNumber) operands.get(3)).floatValue(); // Componente de escala Y
             float e = ((COSNumber) operands.get(4)).floatValue();
             float f = ((COSNumber) operands.get(5)).floatValue();
-            currentTextMatrix = new Matrix(a, b, c, d, e, f);
-            System.out.println("Operador Tm - Text Matrix: " + currentTextMatrix);
+            textMatrix = new Matrix(a, b, c, d, e, f);
+            System.out.println("Operador Tm - Text Matrix: " + textMatrix);
         }
 
-        super.processOperator(operator, operands); // Processa operadores normalmente
-
+        // Se for um operador de desenho de texto (Tj ou TJ)
         if ("Tj".equals(operation) || "TJ".equals(operation)) {
             PDGraphicsState state = getGraphicsState();
             PDColor color = state.getNonStrokingColor();
@@ -85,43 +83,56 @@ public class getFonts extends PDFStreamEngine {
             PDFont font = state.getTextState().getFont();
 
             // Usa a escala Y (valor 'd' da matriz)
-            float textScaleY = currentTextMatrix.getScaleY();
+            float textScaleY = textMatrix.getScaleY();
             Matrix ctm = state.getCurrentTransformationMatrix();
             float ctmScaleY = ctm.getScaleY();
             float effectiveFontSize = baseFontSize * textScaleY * ctmScaleY;
 
+            // Extrai o conteúdo do texto
+            String textContent = "";
+            if ("Tj".equals(operation)) {
+                // Operador Tj: texto simples
+                COSString text = (COSString) operands.get(0);
+                textContent = text.getString();
+            } else if ("TJ".equals(operation)) {
+                // Operador TJ: array de texto e espaçamento
+                COSArray textArray = (COSArray) operands.get(0);
+                StringBuilder textBuilder = new StringBuilder();
+                for (COSBase item : textArray) {
+                    if (item instanceof COSString) {
+                        textBuilder.append(((COSString) item).getString());
+                    }
+                }
+                textContent = textBuilder.toString();
+            }
+
+            // Exibe as informações
+            System.out.println("Texto: " + textContent);
             System.out.println("Tamanho Base (Tf): " + baseFontSize);
             System.out.println("Text Scale Y (Tm): " + textScaleY);
             System.out.println("Tamanho Efetivo: " + effectiveFontSize);
+            System.out.println("Coordenadas X:" + ctm.getTranslateX() + " y:" + ctm.getTranslateY());
+
+            // Exibe informações sobre a fonte
+            PDResources resources = getResources();
+            if (resources != null) {
+                List<String> fontes = new ArrayList<>();
+                for (COSName nomeFonte : resources.getFontNames()) {
+                    PDFont fontResource = resources.getFont(nomeFonte);
+                    if (fontResource != null) {
+                        fontes.add(" Tamanho base: " + baseFontSize + " | Tamanho efetivo: " + effectiveFontSize);
+                    }
+                }
+                String info = "Cor: " + (color != null
+                        ? color.getColorSpace().getName() + " " + Arrays.toString(color.getComponents())
+                        : "Indefinido")
+                        + " Fonte(s): " + fontes.getFirst();
+                System.out.println("Página: " + currentPage + " - " + info);
+            }
         }
-    }
 
-
-
-
-    private float getEffectiveFontSize(PDGraphicsState state, float baseFontSize) {
-        Matrix textMatrix = getTextMatrix();
-        Matrix ctm = state.getCurrentTransformationMatrix(); // CTM do estado gráfico
-
-        float effectiveFontSize = baseFontSize;
-
-        if (textMatrix != null && ctm != null) {
-            // Calcular escala da matriz de texto (Y)
-            float textScaleY = (float) Math.sqrt(
-                    Math.pow(textMatrix.getValue(1, 0), 2) +
-                            Math.pow(textMatrix.getValue(1, 1), 2)
-            );
-
-            // Calcular escala da CTM (Y)
-            float ctmScaleY = (float) Math.sqrt(
-                    Math.pow(ctm.getValue(1, 0), 2) +
-                            Math.pow(ctm.getValue(1, 1), 2)
-            );
-
-            // Escala total = combinação das transformações
-            effectiveFontSize = baseFontSize * textScaleY * ctmScaleY;
-        }
-        return effectiveFontSize;
+        // Continua o processamento normal para atualizar o estado (inclusive o textMatrix)
+        super.processOperator(operator, operands);
     }
 
 }

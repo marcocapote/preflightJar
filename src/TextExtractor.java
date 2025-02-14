@@ -79,7 +79,12 @@ public class TextExtractor extends PDFStreamEngine {
                     }
 
                     String fontName = font.getName();
-                    float fontSize = state.getTextState().getFontSize();
+                    float basefontSize = state.getTextState().getFontSize();
+                    float textScaleY = textMatrix.getScaleY();
+                    Matrix ctm = state.getCurrentTransformationMatrix();
+                    float ctmScaleY = ctm.getScaleY();
+                    float fontSize = basefontSize * textScaleY * ctmScaleY;
+
                     String text = font.toString();
 
                     textElements.add(new TextElement(x, yNormalized, color, fontName, fontSize, text));
@@ -112,6 +117,23 @@ public class TextExtractor extends PDFStreamEngine {
                         float f = ((COSNumber) operands.get(5)).floatValue();
                         textMatrix = new Matrix(a, b, c, d, e, f);
                         lineMatrix = new Matrix(a, b, c, d, e, f);
+
+                        float x = textMatrix.getTranslateX();
+                        float y = textMatrix.getTranslateY();
+                        float pageHeight = currentPage.getMediaBox().getHeight();
+                        float yNormalized = pageHeight - y;
+
+                        PDColor color = state.getNonStrokingColor();
+                        PDFont font = state.getTextState().getFont();
+                        if (font == null) {
+                            break;
+                        }
+
+                        String fontName = font.getName();
+                        float fontSize = state.getTextState().getFontSize();
+                        String text = font.toString();
+
+                        textElements.add(new TextElement(x, yNormalized, color, fontName, fontSize, text));
                     }
                 }
                 break;
