@@ -41,28 +41,38 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         PDGraphicsState state = getGraphicsState();
         Matrix ctm = state.getCurrentTransformationMatrix();
 
-        // Transforma as coordenadas da imagem
-        Point2D.Float point = new Point2D.Float(0, 0);
-        Point2D transformed = ctm.transformPoint(point.x, point.y);
-
-        // Obtém as dimensões da imagem
+        // Dimensões originais da imagem
         float imageWidth = pdImage.getWidth();
         float imageHeight = pdImage.getHeight();
 
-        // Calcula o bounding box da imagem
-        Rectangle2D bounds = new Rectangle2D.Float(
-                (float) transformed.getX(),
-                (float) transformed.getY(),
-                imageWidth * ctm.getScaleX(),
-                imageHeight * ctm.getScaleY()
+        // Converter dimensões para pontos (assumindo 300 DPI)
+        float dpi = 300f; // Resolução da imagem
+        float widthInPoints = imageWidth * (72f / dpi);
+        float heightInPoints = imageHeight * (72f / dpi);
+
+        // Usar apenas a translação da matriz (ignorar escala)
+        double x = ctm.getTranslateX();
+        double y = ctm.getTranslateY();
+
+        // Criar retângulo com as dimensões corretas
+        Rectangle2D bounds = new Rectangle2D.Double(
+                x,
+                y,
+                widthInPoints,
+                heightInPoints
         );
 
-        // Adiciona o elemento gráfico à lista
+        // Adicionar à lista de elementos gráficos
         graphicElements.add(new GraphicElement(bounds, state.getNonStrokingColor(), state.getNonStrokingColorSpace()));
-        mensagens.add("Image detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + pdImage.getColorSpace().getName());
-        // Atualiza as coordenadas máximas e mínimas
         updateBounds(bounds);
+
+        // Log para depuração
+        mensagens.add("Image detected on page: " + getPageNumber(currentPage) +
+                " ColorSpace: " + pdImage.getColorSpace().getName() +
+                " Matrix: " + ctm +
+                " Bounds: " + bounds);
     }
+    //  mensagens.add("Image detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + pdImage.getColorSpace().getName() + " MAtriz: " + ctm);
 
     @Override
     public void clip(int i) throws IOException {
@@ -76,11 +86,19 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         PDColorSpace fillColorSpace = state.getNonStrokingColorSpace();
         Matrix ctm = state.getCurrentTransformationMatrix();
 
+        // Process the path bounds and get the bounding box
+        Rectangle2D bounds = processPathBounds(ctm);
+        String heightMessage = "";
+        if (bounds != null) {
+            double height = bounds.getHeight();
+            heightMessage = " Height: " + height;
+        }
         //  System.out.println("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
-        mensagens.add("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
-
-        // Processa os bounds do caminho
-        processPathBounds(false, ctm);
+        mensagens.add("Fill Path detected on page: " + getPageNumber(currentPage)
+                + " ColorSpace: " + fillColorSpace
+                + " Components: " + fillColor
+                + heightMessage);
+        graphicElements.add(new GraphicElement(bounds, fillColor, fillColorSpace));
     }
 
     @Override
@@ -106,44 +124,35 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
 
 
         // Processa os bounds do caminho
-        processPathBounds(true, ctm);
+        processPathBounds(ctm);
     }
 
-    private void processPathBounds(boolean isStroke, Matrix ctm) {
-        if (!currentPathPoints.isEmpty()) {
-            double minX = Double.MAX_VALUE;
-            double minY = Double.MAX_VALUE;
-            double maxX = -Double.MAX_VALUE;
-            double maxY = -Double.MAX_VALUE;
-
-            for (Point2D point : currentPathPoints) {
-                // Transforma o ponto usando a matriz CTM
-                Point2D transformed = ctm.transformPoint((float) point.getX(), (float) point.getY());
-                double x = transformed.getX();
-                double y = transformed.getY();
-                minX = Math.min(minX, x);
-                minY = Math.min(minY, y);
-                maxX = Math.max(maxX, x);
-                maxY = Math.max(maxY, y);
-            }
-
-            if (minX != Double.MAX_VALUE) {
-                double width = maxX - minX;
-                double height = maxY - minY;
-                Rectangle2D bounds = new Rectangle2D.Double(minX, minY, width, height);
-
-                // Adiciona o elemento gráfico à lista
-                PDGraphicsState state = getGraphicsState();
-                PDColor color = isStroke ? state.getStrokingColor() : state.getNonStrokingColor();
-                PDColorSpace colorSpace = isStroke ? state.getStrokingColorSpace() : state.getNonStrokingColorSpace();
-                graphicElements.add(new GraphicElement(bounds, color, colorSpace));
-
-                // Atualiza as coordenadas máximas e mínimas
-                updateBounds(bounds);
-            }
+    private Rectangle2D processPathBounds(Matrix ctm) {
+        if (currentPathPoints.isEmpty()) {
+            return null;
         }
+
+        double minX = Double.MAX_VALUE;
+        double minY = Double.MAX_VALUE;
+        double maxX = -Double.MAX_VALUE;
+        double maxY = -Double.MAX_VALUE;
+
+        for (Point2D point : currentPathPoints) {
+            double x = point.getX();
+            double y = point.getY();
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+        }
+
         currentPathPoints.clear();
+
+        double width = maxX - minX;
+        double height = maxY - minY;
+        return new Rectangle2D.Double(minX, minY, width, height);
     }
+
 
     @Override
     public void moveTo(float x, float y) throws IOException {
@@ -157,7 +166,10 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
 
     @Override
     public void curveTo(float x1, float y1, float x2, float y2, float x3, float y3) throws IOException {
-        addTransformedPoint(x3, y3); // Apenas o ponto final para simplificar
+        // Adiciona pontos de controle e final
+        addTransformedPoint(x1, y1);
+        addTransformedPoint(x2, y2);
+        addTransformedPoint(x3, y3);
     }
 
     private void addTransformedPoint(float x, float y) {
@@ -185,11 +197,19 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
 
     @Override
     public void appendRectangle(Point2D p0, Point2D p1, Point2D p2, Point2D p3) throws IOException {
-        // Processa retângulos explicitamente
-        currentPathPoints.add(p0);
-        currentPathPoints.add(p1);
-        currentPathPoints.add(p2);
-        currentPathPoints.add(p3);
+        PDGraphicsState state = getGraphicsState();
+        Matrix ctm = state.getCurrentTransformationMatrix();
+
+        // Transforma os pontos do retângulo
+        Point2D transformedP0 = ctm.transformPoint((float) p0.getX(), (float) p0.getY());
+        Point2D transformedP1 = ctm.transformPoint((float) p1.getX(), (float) p1.getY());
+        Point2D transformedP2 = ctm.transformPoint((float) p2.getX(), (float) p2.getY());
+        Point2D transformedP3 = ctm.transformPoint((float) p3.getX(), (float) p3.getY());
+
+        currentPathPoints.add(transformedP0);
+        currentPathPoints.add(transformedP1);
+        currentPathPoints.add(transformedP2);
+        currentPathPoints.add(transformedP3);
     }
 
     private int getPageNumber(PDPage page) {

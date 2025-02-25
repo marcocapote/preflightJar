@@ -63,7 +63,13 @@ public class Main {
                                // System.out.println(text.getBounds());
                                 for (GraphicElement graphic : graphicElements) {
                                     if (graphic.getBounds().intersects(text.getBounds())) {
-                                        System.out.println("Pagina: " + pageIndex + "  Posicao: (" + text.getX() + ", " + text.getY() + ")" + ", Tamanho: " + text.getFontSize() + "  CorTexto: " + Arrays.toString(text.getColor().getComponents()) + "  CorGrafico: " + Arrays.toString(graphic.getColor().getComponents()) + " Texto: " + text.getText());
+                                        System.out.println("Pagina: " + pageIndex +
+                                                "  Posicao: (" + text.getX() + ", " + text.getY() + ")" +
+                                                ", Tamanho: " + text.getFontSize() +
+                                                "  CorTexto: " + Arrays.toString(text.getColor().getComponents()) +
+                                                "  CorGrafico: " + Arrays.toString(graphic.getColor().getComponents()) +
+                                                " Texto: " + text.getText() +
+                                                " Posição retangulo: " + graphic.getBounds());
                                     }
 //                                    else {
 //                                        System.out.println("Graphic: " + graphic.getBounds());
@@ -92,6 +98,20 @@ public class Main {
                     for (PDPage page : pages) {
                         PDFMargins extractor = new PDFMargins(page, document);
                         extractor.calculateMarginsAndBleed();
+                        extractor.elementMargin();
+                    }
+                }
+                case "teste" -> {
+                    PDPageTree pages = document.getDocumentCatalog().getPages();
+                    for (PDPage page : pages) {
+                        CustomGraphicsExtractor extractor = new CustomGraphicsExtractor();
+                        extractor.processPage(page);
+
+                        // Imprime os elementos processados
+                        List<GraphicElement> elementos = extractor.getGraphicalElements();
+                        for (GraphicElement elemento : elementos) {
+                            System.out.println(elemento.toString()); // Usa o método toString() automaticamente
+                        }
                     }
                 }
                 case "marginSafety" -> {
@@ -107,10 +127,11 @@ public class Main {
 
                     PDPage page = pages.get(0);
                     PDRectangle mediaBox = page.getMediaBox();
+                    PDRectangle trimBox = page.getTrimBox();
 
                     // Convertendo de pontos para mm
-                    float widthMm = (mediaBox.getWidth() / 72) * 25.4f;
-                    float heightMm = (mediaBox.getHeight() / 72) * 25.4f;
+                    float widthMm = (trimBox.getWidth() / 72) * 25.4f;
+                    float heightMm = (trimBox.getHeight() / 72) * 25.4f;
 
                     System.out.println("Paginas: " + quantidadePagina);
                     System.out.printf("Resolucao: %.2f mm x %.2f mm", widthMm, heightMm);

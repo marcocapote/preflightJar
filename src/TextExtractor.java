@@ -149,8 +149,14 @@ public class TextExtractor extends PDFStreamEngine {
                             String fontName = font.getName();
                             float fontSize = state.getTextState().getFontSize();
                             String text = font.toString();
+                            // Calcular o fontSize corretamente (como no primeiro código)
+                            float baseFontSize = state.getTextState().getFontSize();
+                            float textScaleY = textMatrix.getScaleY(); // Ou a nova matriz, se aplicável
+                            float ctmScaleY = state.getCurrentTransformationMatrix().getScaleY();
+                            float effectiveFontSize = baseFontSize * textScaleY * ctmScaleY;
 
-                            textElements.add(new TextElement(x, yNormalized, color, fontName, fontSize, text));
+                            // Atualizar o TextElement com effectiveFontSize
+                            textElements.add(new TextElement(x, yNormalized, color, fontName, effectiveFontSize, text));
                         }
                     }
                     break;
