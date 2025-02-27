@@ -58,10 +58,11 @@ public class PDFMargins {
         float bleedBottomMm = Math.abs(pontosParaMm(bleedBottom));
 
         // Exibe os resultados
+        System.out.println("-------------------------");
         System.out.println("Pagina: " + getPageNumber());
         System.out.printf("Sangria [Esq: %.1f mm, Dir: %.1f mm, Topo: %.1f mm, Base: %.1f mm]%n",
                 bleedLeftMm, bleedRightMm, bleedTopMm, bleedBottomMm);
-        System.out.println("-------------------------");
+
     }
 
     public void calculateSafetyMargin(){
@@ -123,19 +124,19 @@ public class PDFMargins {
 
             // Verifica se o elemento está na área de risco
             if (margemMaior.intersects(bounds) && !margemMenor.contains(bounds)) {
-             //   System.out.println("Elemento muito perto da margem de corte: " + graphic + " " + graphic.getColor());
+              //  System.out.println("Elemento muito perto da margem de corte: " + graphic + " " + graphic.getColor());
                 // Verifica cada lado individualmente e calcula a distância em relação à trimBox
                 if (Math.round(Math.abs(pontosParaMm((float) difL))) < 5) {
-                    System.out.println("Distância da trimBox à esquerda: " + Math.abs(pontosParaMm((float) difL)) + "mm "+ graphic + " " + graphic.getColor());
+                    System.out.println("esquerda distancia: " + Math.abs(pontosParaMm((float) difL)) + "mm " );
                 }
                 if (Math.round(Math.abs(pontosParaMm((float) difR))) < 5) {
-                    System.out.println("Distância da trimBox à direita: " + Math.abs(pontosParaMm((float) difR)) + "mm " + graphic + " " + graphic.getColor());
+                    System.out.println("direita distancia: " + Math.abs(pontosParaMm((float) difR)) + "mm " );
                 }
                 if (Math.round(Math.abs(pontosParaMm((float) difD))) < 5) {
-                    System.out.println("Distância da trimBox inferior: " + Math.abs(pontosParaMm((float) difD)) + "mm " + graphic + " " + graphic.getColor());
+                    System.out.println("inferior distancia: " + Math.abs(pontosParaMm((float) difD)) + "mm " );
                 }
                 if (Math.round(Math.abs(pontosParaMm((float) difU))) < 5) {
-                    System.out.println("Distância da trimBox superior: " + Math.abs(pontosParaMm((float) difU)) + "mm " + graphic + " " + graphic.getColor());
+                    System.out.println("superior distancia: " + Math.abs(pontosParaMm((float) difU)) + "mm "  );
                 }
             }
         }
