@@ -167,7 +167,7 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         currentPathPoints.clear();
     }
 
-    // Método para conversão de coordenadas Y
+    // Metodo para conversão de coordenadas Y
     private Rectangle2D convertPDFCoordinates(Rectangle2D bounds, PDRectangle mediaBox) {
         double javaY = mediaBox.getHeight() - bounds.getY() - bounds.getHeight();
         return new Rectangle2D.Double(
