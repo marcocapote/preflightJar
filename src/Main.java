@@ -126,7 +126,6 @@ public class Main {
                     int quantidadePagina = pages.getCount();
 
                     PDPage page = pages.get(0);
-                    PDRectangle mediaBox = page.getMediaBox();
                     PDRectangle trimBox = page.getTrimBox();
 
                     // Convertendo de pontos para mm

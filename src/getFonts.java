@@ -92,11 +92,11 @@ public class getFonts extends PDFStreamEngine {
             String textContent = "";
             if ("Tj".equals(operation)) {
                 // Operador Tj: texto simples
-                COSString text = (COSString) operands.get(0);
+                COSString text = (COSString) operands.getFirst();
                 textContent = text.getString();
             } else if ("TJ".equals(operation)) {
                 // Operador TJ: array de texto e espaçamento
-                COSArray textArray = (COSArray) operands.get(0);
+                COSArray textArray = (COSArray) operands.getFirst();
                 StringBuilder textBuilder = new StringBuilder();
                 for (COSBase item : textArray) {
                     if (item instanceof COSString) {

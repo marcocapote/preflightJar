@@ -17,12 +17,7 @@ public class GraphicElement {
         this.colorSpace = colorSpace;
     }
 
-    // Construtor novo (usando path e operation)
-    public GraphicElement(List<PathElement> path, String operation) {
-        this.path = path;
-        this.operation = operation;
-        this.bounds = calculateBoundsFromPath(); // Calcula bounds automaticamente
-    }
+
 
     // Método para calcular bounds a partir do path
     private Rectangle2D calculateBoundsFromPath() {

@@ -1,5 +1,4 @@
 import java.awt.geom.Point2D;
-import java.io.File;
 import java.io.IOException;
 import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
 import org.apache.pdfbox.cos.COSName;
@@ -7,7 +6,6 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageTree;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.util.Matrix;
 
 public class getImages extends PDFGraphicsStreamEngine {

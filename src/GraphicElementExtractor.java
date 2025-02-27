@@ -4,20 +4,20 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageTree;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
 import org.apache.pdfbox.pdmodel.graphics.color.PDColorSpace;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
 import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
 import org.apache.pdfbox.util.Matrix;
 
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-import java.io.File;
+import java.awt.*;
+import java.awt.geom.*;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
+
 
 public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
     private final PDPage currentPage;
@@ -44,11 +44,17 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         // Dimensões originais da imagem
         float imageWidth = pdImage.getWidth();
         float imageHeight = pdImage.getHeight();
+        // Converte para pontos (1 ponto = 1/72 polegada)
+        float widthPoints = Math.abs(ctm.getScalingFactorX());
+        float heightPoints = Math.abs(ctm.getScalingFactorY());
 
-        // Converter dimensões para pontos (assumindo 300 DPI)
-        float dpi = 300f; // Resolução da imagem
-        float widthInPoints = imageWidth * (72f / dpi);
-        float heightInPoints = imageHeight * (72f / dpi);
+        // Calcula os DPI corretamente
+        float dpiX = (imageWidth / widthPoints) * 72;
+        float dpiY = (imageHeight / heightPoints) * 72;
+        int mediaDpi = Math.round((dpiX + dpiY)/2);
+
+        float widthInPoints = imageWidth * (72f / mediaDpi);
+        float heightInPoints = imageHeight * (72f / mediaDpi);
 
         // Usar apenas a translação da matriz (ignorar escala)
         double x = ctm.getTranslateX();
@@ -79,6 +85,36 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         // No action needed for clipping
     }
 
+//    @Override
+//    public void showText(byte[] string) throws IOException {
+//        // Decodifica os bytes para uma string usando a codificação adequada
+//        String text = new String(string, "ISO-8859-1"); // ou outra codificação conforme o PDF
+//        // Obtém a matriz de texto atual
+//        Matrix textMatrix = getTextMatrix();
+//
+//        // A partir da fonte atual e do estado de texto, você pode obter
+//        // as métricas (como tamanho, avanço dos glifos, altura, etc.)
+//        // que ajudam a calcular o bounding box do texto.
+//        // Por exemplo, utilizando getFont() e métodos relacionados:
+//        PDGraphicsState state = getGraphicsState();
+//        float fontSize = state.getTextState().getFontSize();
+//        // A obtenção das métricas reais depende do tipo de fonte utilizada.
+//        // Se for um PDType0Font ou PDTrueTypeFont, você pode utilizar métodos
+//        // como getBoundingBox() da fonte, ajustados pelo fontSize.
+//
+//        // Calcule o bounding box real do texto usando o textMatrix e as métricas.
+//        Rectangle2D bounds = computeTextBounds(text, state, textMatrix);
+//
+//        // Registre o elemento textual com as informações calculadas.
+//        graphicElements.add(new GraphicElement(bounds, state.getNonStrokingColor(), state.getNonStrokingColorSpace()));
+//
+//        // Também pode registrar mensagens de depuração, se necessário.
+//        mensagens.add("Show Text detected on page: " + getPageNumber(currentPage)
+//                + " Text: " + text
+//                + " Bounds: " + bounds
+//                + " CTM: " + textMatrix);
+//    }
+
     @Override
     public void fillPath(int windingRule) throws IOException {
         PDGraphicsState state = getGraphicsState();
@@ -86,20 +122,67 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         PDColorSpace fillColorSpace = state.getNonStrokingColorSpace();
         Matrix ctm = state.getCurrentTransformationMatrix();
 
-        // Process the path bounds and get the bounding box
-        Rectangle2D bounds = processPathBounds(ctm);
-        String heightMessage = "";
-        if (bounds != null) {
-            double height = bounds.getHeight();
-            heightMessage = " Height: " + height;
+        // Converte a Matrix do PDFBox para AffineTransform
+        AffineTransform transform = new AffineTransform(
+                ctm.getScaleX(), ctm.getShearY(),
+                ctm.getShearX(), ctm.getScaleY(),
+                ctm.getTranslateX(), ctm.getTranslateY()
+        );
+
+        // Cria um objeto Path2D para representar o caminho
+        Path2D path = new Path2D.Double(windingRule);
+        for (int i = 0; i < currentPathPoints.size(); i++) {
+            Point2D p = currentPathPoints.get(i);
+            if (i == 0) {
+                path.moveTo(p.getX(), p.getY());
+            } else {
+                path.lineTo(p.getX(), p.getY());
+            }
         }
-        //  System.out.println("Fill Path detected on page: " + getPageNumber(currentPage) + " ColorSpace: " + fillColorSpace + " Components: " + fillColor);
+
+        // Fecha o caminho se necessário
+        if (!currentPathPoints.isEmpty()) {
+            path.closePath();
+        }
+
+        // Aplica a transformação ao caminho
+        Shape transformedShape = transform.createTransformedShape(path);
+
+        // Calcula os bounds precisos
+        Rectangle2D preciseBounds = transformedShape.getBounds2D();
+
+        // Converte coordenadas Y (PDF -> Java2D)
+        PDRectangle mediaBox = currentPage.getMediaBox();
+        preciseBounds = convertPDFCoordinates(preciseBounds, mediaBox);
+
+        // Adiciona à lista de elementos
+        graphicElements.add(new GraphicElement(preciseBounds, fillColor, fillColorSpace));
         mensagens.add("Fill Path detected on page: " + getPageNumber(currentPage)
                 + " ColorSpace: " + fillColorSpace
                 + " Components: " + fillColor
-                + heightMessage);
-        graphicElements.add(new GraphicElement(bounds, fillColor, fillColorSpace));
+
+                + " ctm: " + ctm
+
+        );
+        currentPathPoints.clear();
     }
+
+    // Método para conversão de coordenadas Y
+    private Rectangle2D convertPDFCoordinates(Rectangle2D bounds, PDRectangle mediaBox) {
+        double javaY = mediaBox.getHeight() - bounds.getY() - bounds.getHeight();
+        return new Rectangle2D.Double(
+                bounds.getX(),
+                javaY,
+                bounds.getWidth(),
+                bounds.getHeight()
+        );
+    }
+
+
+
+
+
+
 
     @Override
     public void fillAndStrokePath(int i) throws IOException {
@@ -220,8 +303,6 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
     private void updateBounds(Rectangle2D bounds) {
         float x = (float) bounds.getX();
         float y = (float) bounds.getY();
-        float width = (float) bounds.getWidth();
-        float height = (float) bounds.getHeight();
 
         if (x > HX) HX = x;
         if (x < LX) LX = x;
@@ -229,40 +310,7 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         if (y < LY) LY = y;
     }
 
-    public void extractElements(File file, int PAGE_LIMIT) {
-        try (PDDocument document = PDDocument.load(file)) {
-            PDPageTree pages = document.getDocumentCatalog().getPages();
-            Scanner scanner = new Scanner(System.in);
-            int currentIndex = 0;
 
-            while (currentIndex < pages.getCount()) {
-                int endIndex = Math.min(currentIndex + PAGE_LIMIT, pages.getCount());
-
-                for (int i = currentIndex; i < endIndex; i++) {
-                    PDPage page = pages.get(i);
-                    GraphicElementExtractor extractor = new GraphicElementExtractor(page, document);
-                    extractor.processPage(page);
-                }
-
-                currentIndex = endIndex;
-
-                if (currentIndex < pages.getCount()) {
-                    System.out.println("Digite 'next' para processar as próximas " + PAGE_LIMIT + " páginas ou 'exit' para sair:");
-                    String input = scanner.nextLine().trim().toLowerCase();
-
-                    if ("exit".equals(input)) {
-                        break;
-                    } else if (!"next".equals(input)) {
-                        System.out.println("Comando inválido. Use 'next' para continuar ou 'exit' para sair.");
-                    }
-                }
-            }
-
-            System.out.println("Processamento concluído.");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public List<GraphicElement> getGraphicElements() {
         return graphicElements;
@@ -272,19 +320,5 @@ public class GraphicElementExtractor extends PDFGraphicsStreamEngine {
         return mensagens;
     }
 
-    public float getHX() {
-        return HX;
-    }
 
-    public float getHY() {
-        return HY;
-    }
-
-    public float getLX() {
-        return LX;
-    }
-
-    public float getLY() {
-        return LY;
-    }
 }

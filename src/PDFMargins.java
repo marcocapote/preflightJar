@@ -4,8 +4,6 @@ import java.util.List;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
-import org.apache.pdfbox.util.Matrix;
 import java.awt.geom.Rectangle2D;
 
 public class PDFMargins {
@@ -16,7 +14,7 @@ public class PDFMargins {
     private PDRectangle trimBox;
     private PDRectangle artBox;
     private List<GraphicElement> graphicElements;
-    private int margemErro = 5;
+    private final int margemErro = 150;
 
     public PDFMargins(PDPage page, PDDocument document) throws IOException {
         this.currentPage = page;
@@ -83,25 +81,23 @@ public class PDFMargins {
     }
 
     public Rectangle2D margemErroMaior() {
-        // Aumenta a TrimBox em 1 unidade em todos os lados
-        Rectangle2D margemErroMaior = new Rectangle2D.Double(
+        // Cria uma area maior que a trimbox a partir do valor de margemErro
+        return new Rectangle2D.Double(
                 trimBox.getLowerLeftX() - margemErro, // Reduz o X mínimo
                 trimBox.getLowerLeftY() - margemErro, // Reduz o Y mínimo
                 trimBox.getWidth() + 2 * margemErro,  // Aumenta a largura em 2 * margemErro
                 trimBox.getHeight() + 2 * margemErro  // Aumenta a altura em 2 * margemErro
         );
-        return margemErroMaior;
     }
 
     public Rectangle2D margemErroMenor() {
-        // Aumenta a TrimBox em 1 unidade em todos os lados
-        Rectangle2D margemErroMenor = new Rectangle2D.Double(
+        // Cria uma area menor que a trimbox a partir do valor de margemErro
+        return new Rectangle2D.Double(
                 trimBox.getLowerLeftX() + margemErro, // Reduz o X mínimo
                 trimBox.getLowerLeftY() + margemErro, // Reduz o Y mínimo
                 trimBox.getWidth() - 2 * margemErro,  // Aumenta a largura em 2 * margemErro
                 trimBox.getHeight() - 2 * margemErro  // Aumenta a altura em 2 * margemErro
         );
-        return margemErroMenor;
     }
 
 
@@ -120,27 +116,26 @@ public class PDFMargins {
 
         for (GraphicElement graphic : graphicElements) {
             Rectangle2D bounds = graphic.getBounds();
+            double difL = trimBox.getLowerLeftX() - bounds.getMinX();
+            double difR = bounds.getMaxX() - trimBox.getUpperRightX();
+            double difD = trimBox.getLowerLeftY() - bounds.getMinY();
+            double difU = bounds.getMaxY() - trimBox.getUpperRightY();
 
             // Verifica se o elemento está na área de risco
             if (margemMaior.intersects(bounds) && !margemMenor.contains(bounds)) {
-                System.out.println("Elemento muito perto da margem de corte: " + graphic + " " + graphic.getColor());
-
-                // Verifica cada lado individualmente
-                if (bounds.getMinX() < margemMenor.getMinX()) {
-                    double dif = trimBox.getLowerLeftX() - bounds.getMinX();
-                    System.out.println("Sangria esquerda: " + pontosParaMm((float) dif) + "mm");
+             //   System.out.println("Elemento muito perto da margem de corte: " + graphic + " " + graphic.getColor());
+                // Verifica cada lado individualmente e calcula a distância em relação à trimBox
+                if (Math.round(Math.abs(pontosParaMm((float) difL))) < 5) {
+                    System.out.println("Distância da trimBox à esquerda: " + Math.abs(pontosParaMm((float) difL)) + "mm "+ graphic + " " + graphic.getColor());
                 }
-                if (bounds.getMaxX() > margemMenor.getMaxX()) {
-                    double dif = bounds.getMaxX() - trimBox.getUpperRightX();
-                    System.out.println("Sangria direita: " + pontosParaMm((float) dif) + "mm");
+                if (Math.round(Math.abs(pontosParaMm((float) difR))) < 5) {
+                    System.out.println("Distância da trimBox à direita: " + Math.abs(pontosParaMm((float) difR)) + "mm " + graphic + " " + graphic.getColor());
                 }
-                if (bounds.getMinY() < margemMenor.getMinY()) {
-                    double dif = trimBox.getLowerLeftY() - bounds.getMinY();
-                    System.out.println("Sangria inferior: " + pontosParaMm((float) dif) + "mm");
+                if (Math.round(Math.abs(pontosParaMm((float) difD))) < 5) {
+                    System.out.println("Distância da trimBox inferior: " + Math.abs(pontosParaMm((float) difD)) + "mm " + graphic + " " + graphic.getColor());
                 }
-                if (bounds.getMaxY() > margemMenor.getMaxY()) {
-                    double dif = bounds.getMaxY() - trimBox.getUpperRightY();
-                    System.out.println("Sangria superior: " + pontosParaMm((float) dif) + "mm");
+                if (Math.round(Math.abs(pontosParaMm((float) difU))) < 5) {
+                    System.out.println("Distância da trimBox superior: " + Math.abs(pontosParaMm((float) difU)) + "mm " + graphic + " " + graphic.getColor());
                 }
             }
         }
